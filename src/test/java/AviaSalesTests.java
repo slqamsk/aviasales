@@ -4,6 +4,7 @@ import com.codeborne.selenide.Configuration;
 import com.codeborne.selenide.SelenideElement;
 import com.codeborne.selenide.logevents.SelenideLogger;
 import io.qameta.allure.selenide.AllureSelenide;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -106,11 +107,13 @@ public class AviaSalesTests {
 
     @Test
     void test03SimpleSearch() {
+
         SearchPage sp = new SearchPage();
         sp.setCityFrom("Новосибирс");
         sp.setCityTo("Москв");
         sp.setDates("2026-01-05");
         sp.findTickets();
+
         sleep(5_000);
     }
 
@@ -131,5 +134,10 @@ public class AviaSalesTests {
             switchTo().window(1);
         }
 
+    }
+
+    @Test
+    void test05SimpleFail() {
+        Assertions.fail("Просто прервали тест с ошибкой");
     }
 }
