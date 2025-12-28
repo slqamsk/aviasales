@@ -35,8 +35,25 @@ public class SearchPage {
 
         //Открываем страницу
         Configuration.pageLoadStrategy = "eager";
+        Configuration.browser = "firefox";
         open(url);
+
+        sleep(5_000);
+        if ($("body").text().contains("Тут покупают дешёвые авиабилеты")) {
+            System.out.println("ok");
+            $("#credential_picker_container").shouldBe(Condition.visible, Duration.ofSeconds(30));
+            //switchTo().frame(0);
+            switchTo().frame($x("//div[@id='credential_picker_container']//iframe"));
+            System.out.println("iframe: " + $("body").text());
+            //sleep(300_000);
+            $x("//div[@id='close']").click();
+            switchTo().defaultContent();
+        } else {
+            switchTo().window(1);
+        }
         getWebDriver().manage().window().maximize();
+        //sleep(600_000);
+        this.cookieButton.shouldBe(Condition.exist, Duration.ofSeconds(30));
         this.cookieButton.shouldBe(Condition.interactable, Duration.ofSeconds(30));
         this.cookieButton.click();
     }
@@ -78,16 +95,24 @@ public class SearchPage {
 
     @Step("Установить дату")
     public void setDates(String startDate) {
-        this.startDateField.click();
-
         this.startDateTR = $x("//td[@data-day='" + startDate + "']//button");
-        this.startDateTR.shouldBe(Condition.exist, Duration.ofSeconds(30));
-        this.startDateTR.shouldBe(Condition.interactable, Duration.ofSeconds(30));
+
+        for (int i = 0; i < this.attempts; i++) {
+            sleep(3_000);
+            this.startDateField.click();
+            System.out.println("Попытка: " + i);
+            if (this.startDateTR.exists()) {
+                break;
+            }
+        }
+
+        this.startDateTR.shouldBe(Condition.exist, Duration.ofSeconds(10));
+        this.startDateTR.shouldBe(Condition.interactable, Duration.ofSeconds(10));
 
         this.startDateTR.click();
 
-        this.oneWayButton.shouldBe(Condition.exist, Duration.ofSeconds(30));
-        this.oneWayButton.shouldBe(Condition.interactable, Duration.ofSeconds(30));
+        this.oneWayButton.shouldBe(Condition.exist, Duration.ofSeconds(10));
+        this.oneWayButton.shouldBe(Condition.interactable, Duration.ofSeconds(10));
         this.oneWayButton.click();
     }
 

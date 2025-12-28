@@ -54,9 +54,10 @@ public class AviaSalesTests {
     }
 
 
-    @Disabled
+    //@Disabled
     @Test
     void test01ChangeCityFromDirtyFix() {
+        Configuration.browser = "firefox";
         //Configuration.pageLoadStrategy = "eager"; // Без полной загрузки не работает
         Configuration.pageLoadTimeout = 180_000; // Увеличиваем время для полной загрузки до 3 минут.
         // Страница нестабильная: иногда быстро загружается, иногда требуется больше минуты
@@ -73,7 +74,7 @@ public class AviaSalesTests {
         // В цикле мы тупо присваиваем значение, пока оно не присвоится.
         // Конечно, надо добавить ограничение на число попыток, чтобы не было бесконечного цикла
         // Например, цикл for от 1 до 100, а потом, если значение не присвоено, то выбрасывать ошибку
-        while (!Objects.equals(se.getValue(), cityTo)) {
+        while (cityTo.equals(se.getValue())) {
             sleep(1_000);
             se.click(); // Если кликнуть по этому полю, а потом перед тем, как присваивать значение очистить его,
             // то через какое-то время поле приходит в состояние, когда ему можно присвоить значение, которое требуется
@@ -81,10 +82,11 @@ public class AviaSalesTests {
             System.out.println(se.getValue());
         }
     }
-    @Disabled
+    //@Disabled
     @Test
     void test02ChangeCityFromSolution() {
         //Проверим, а если просто подождать, то не будет ли всё хорошо работать
+        Configuration.browser = "firefox";
         Configuration.pageLoadTimeout = 180_000;
         for (int i = 0; i < 30; i++) {
             open("https://aviasales.ru/");
@@ -110,5 +112,24 @@ public class AviaSalesTests {
         sp.setDates("2026-01-05");
         sp.findTickets();
         sleep(5_000);
+    }
+
+    @Test
+    void test04() {
+        Configuration.browser = "firefox";
+        open("https://aviasales.ru");
+        sleep(3000);
+        if ($("body").text().contains("Тут покупают дешёвые авиабилеты")) {
+            System.out.println("ok");
+            $("#credential_picker_container").shouldBe(Condition.visible, Duration.ofSeconds(30));
+            //switchTo().frame(0);
+            switchTo().frame($x("//div[@id='credential_picker_container']//iframe"));
+            System.out.println("iframe: " + $("body").text());
+            //sleep(300_000);
+            $x("//div[@id='close']").click();
+        } else {
+            switchTo().window(1);
+        }
+
     }
 }
