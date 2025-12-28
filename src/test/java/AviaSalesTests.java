@@ -2,6 +2,9 @@ import static com.codeborne.selenide.Selenide.*;
 import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.Configuration;
 import com.codeborne.selenide.SelenideElement;
+import com.codeborne.selenide.logevents.SelenideLogger;
+import io.qameta.allure.selenide.AllureSelenide;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.Keys;
@@ -9,9 +12,48 @@ import org.openqa.selenium.Keys;
 import java.time.Duration;
 import java.util.Objects;
 
+import org.openqa.selenium.chrome.ChromeOptions;
 import pages.SearchPage;
 
 public class AviaSalesTests {
+
+    @BeforeAll
+    static void beforeAll() {
+        // Allure listener
+        SelenideLogger.addListener("allure", new AllureSelenide());
+
+        // Настройки для CI
+        Configuration.browser = "chrome";
+        Configuration.browserSize = "1920x1080";
+        Configuration.timeout = 10000;
+
+        // Устанавливаем remote только если он указан и не пустой
+        String remoteUrl = System.getProperty("selenide.remote");
+        if (remoteUrl != null && !remoteUrl.trim().isEmpty()) {
+            Configuration.remote = remoteUrl;
+        }
+
+        // Для CI устанавливаем headless режим
+        boolean isCi = System.getProperty("selenide.headless", "false").equals("true");
+        Configuration.headless = isCi;
+
+        // Дополнительные настройки для стабильности в CI
+        Configuration.browserCapabilities.setCapability("acceptInsecureCerts", true);
+        Configuration.pageLoadStrategy = "eager";
+
+        // Уникальный user data directory для избежания конфликтов
+        if (isCi) {
+            ChromeOptions options = new ChromeOptions();
+            options.addArguments(
+                    "--user-data-dir=/tmp/chrome-user-data-" + System.currentTimeMillis(),
+                    "--no-sandbox",
+                    "--disable-dev-shm-usage"
+            );
+            Configuration.browserCapabilities.setCapability(ChromeOptions.CAPABILITY, options);
+        }
+    }
+
+
     @Disabled
     @Test
     void test01ChangeCityFromDirtyFix() {

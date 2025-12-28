@@ -49,7 +49,7 @@ public class SearchPage {
 
             sleep(1_000);
             if (cityFrom.equals(this.cityFrom.getValue())) {
-                sleep(1_000);
+                sleep(5_000);
                 this.cityFrom.sendKeys(Keys.ARROW_DOWN);
                 sleep(1_000);
                 this.cityFrom.sendKeys(Keys.ENTER);
@@ -65,7 +65,7 @@ public class SearchPage {
         this.cityTo.click();
         this.cityTo.sendKeys(Keys.DELETE);
         this.cityTo.sendKeys(cityTo);
-        sleep(1_000);
+        sleep(5_000);
         this.cityTo.sendKeys(Keys.ARROW_DOWN);
         sleep(1_000);
         this.cityTo.sendKeys(Keys.ENTER);
