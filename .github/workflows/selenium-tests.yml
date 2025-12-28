@@ -1,0 +1,175 @@
+name: Java Selenium Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+# Разрешаем запись в репозиторий для GitHub Pages
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  test:
+    name: Run Selenium Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      # Шаг 1: Получение кода
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # Шаг 2: Установка системных зависимостей
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            wget \
+            unzip \
+            curl \
+            libxss1 \
+            fonts-liberation \
+            libnss3 \
+            libnspr4 \
+            libdbus-1-3 \
+            libatk-bridge2.0-0 \
+            libgtk-3-0 \
+            libx11-xcb1 \
+            libxcomposite1 \
+            libxdamage1 \
+            libxrandr2 \
+            xvfb
+
+      # Шаг 3: Установка Google Chrome
+      - name: Install Google Chrome
+        run: |
+          wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
+          echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google-chrome.list
+          sudo apt-get update
+          sudo apt-get install -y google-chrome-stable
+          echo "✅ Chrome version: $(google-chrome --version)"
+
+      # Шаг 4: Установка Java
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      # Шаг 5: Установка Allure
+      - name: Install Allure
+        run: |
+          wget -q https://github.com/allure-framework/allure2/releases/download/2.29.0/allure-2.29.0.tgz
+          tar -zxvf allure-2.29.0.tgz -C /opt/
+          ln -s /opt/allure-2.29.0/bin/allure /usr/local/bin/allure
+          echo "✅ Allure version: $(allure --version)"
+
+      # Шаг 6: Даем права на выполнение gradlew
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+
+      # Шаг 7: Запуск тестов с Xvfb
+      - name: Run tests with Xvfb
+        run: |
+          export DISPLAY=:99
+          Xvfb :99 -screen 0 1920x1080x24 &
+          ./gradlew clean test --info --stacktrace
+        env:
+          selenide.browser: chrome
+          selenide.headless: true
+
+      # Шаг 8: Генерация Allure отчета
+      - name: Generate Allure Report
+        run: |
+          allure generate build/allure-results -o build/reports/allure-report -c
+          echo "✅ Allure report generated"
+
+      # Шаг 9: Создание README для отчета
+      - name: Create report info
+        run: |
+          cat > build/reports/allure-report/README.md << 'EOF'
+          # Allure Test Report
+          
+          ## Как посмотреть отчет:
+          
+          ### Вариант 1: Онлайн (GitHub Pages)
+          Отчет автоматически публикуется на GitHub Pages.
+          
+          ### Вариант 2: Скачать и открыть локально
+          1. Скачайте артефакт `allure-report-download` из GitHub Actions
+          2. Распакуйте архив
+          3. Откройте файл `index.html` в браузере
+          
+          ## Информация о запуске:
+          - **Ревизия:** ${{ github.sha }}
+          - **Ветка:** ${{ github.ref_name }}
+          - **Запуск:** #${{ github.run_number }}
+          EOF
+
+      # Шаг 10: Загрузка артефактов для скачивания
+      - name: Upload Allure report as artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: allure-report-download
+          path: build/reports/allure-report/
+          retention-days: 30
+
+      - name: Upload test results as artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-download
+          path: |
+            build/test-results/
+            build/allure-results/
+          retention-days: 30
+
+      # Шаг 11: Деплой отчета на GitHub Pages
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+        if: success()
+
+      - name: Upload to Pages
+        uses: actions/upload-pages-artifact@v3
+        if: success()
+        with:
+          path: ./build/reports/allure-report
+
+      - name: Deploy to GitHub Pages
+        if: success()
+        id: deployment
+        uses: actions/deploy-pages@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  # Отдельный job для уведомления о доступности отчета
+  notify:
+    name: Report Notification
+    needs: test
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+      - name: Report Success
+        if: needs.test.result == 'success'
+        run: |
+          REPORT_URL="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/"
+          echo "🔗 Allure Report URL: $REPORT_URL"
+          echo "::notice title=Allure Report::$REPORT_URL"
+          echo "🎉 Тесты прошли успешно!"
+          echo "📊 Allure Report доступен:"
+          echo "   💾 Скачать: В разделе Artifacts как 'allure-report-download'"
+          echo "   🌐 Онлайн: После настройки GitHub Pages"
+
+      - name: Report Failure
+        if: needs.test.result == 'failure'
+        run: |
+          echo "❌ Тесты завершились с ошибками"
+          echo "📋 Подробности в разделе Artifacts как 'test-results-download'"
