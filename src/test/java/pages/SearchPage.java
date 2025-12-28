@@ -5,6 +5,7 @@ import static com.codeborne.selenide.WebDriverRunner.getWebDriver;
 import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.Configuration;
 import com.codeborne.selenide.SelenideElement;
+import io.qameta.allure.Step;
 import org.openqa.selenium.Keys;
 
 import java.time.Duration;
@@ -17,6 +18,7 @@ public class SearchPage {
             startDateField, startDateTR,
             oneWayButton, ostrovokLable, findTicketsButton,
             recomendedPrice;
+
 
     public SearchPage() {
         //Определяем поля
@@ -39,6 +41,7 @@ public class SearchPage {
         this.cookieButton.click();
     }
 
+    @Step("Установить город ОТКУДА")
     public void setCityFrom(String cityFrom) {
         for (int i = 0; i < this.attempts; i++) {
             this.cityFrom.shouldBe(Condition.interactable, Duration.ofSeconds(30));
@@ -59,6 +62,7 @@ public class SearchPage {
         }
     }
 
+    @Step("Установить город КУДА")
     public void setCityTo(String cityTo) {
         this.cityTo.shouldBe(Condition.interactable, Duration.ofSeconds(30));
         this.cityTo.shouldNotBe(Condition.readonly, Duration.ofSeconds(30));
@@ -72,6 +76,7 @@ public class SearchPage {
         sleep(1_000);
     }
 
+    @Step("Установить дату")
     public void setDates(String startDate) {
         this.startDateField.click();
 
@@ -86,6 +91,7 @@ public class SearchPage {
         this.oneWayButton.click();
     }
 
+    @Step("Найти билеты")
     public void findTickets() {
         this.ostrovokLable.click();
         this.findTicketsButton.click();
